@@ -1,4 +1,13 @@
+import { useState } from 'react'
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 import type { Person } from '../types'
+import { colors } from '../theme'
 
 interface ExpenseFormProps {
   people: Person[]
@@ -11,128 +20,198 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ people, onAdd }: ExpenseFormProps) {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const form = e.currentTarget
-    const description = (
-      form.elements.namedItem('description') as HTMLInputElement
-    ).value.trim()
-    const amount = parseFloat(
-      (form.elements.namedItem('amount') as HTMLInputElement).value,
-    )
-    const paidById = (form.elements.namedItem('paidBy') as HTMLSelectElement)
-      .value
-    const splitCheckboxes = form.querySelectorAll<HTMLInputElement>(
-      'input[name="split"]:checked',
-    )
-    const splitAmongIds = Array.from(splitCheckboxes).map((cb) => cb.value)
+  const [description, setDescription] = useState('')
+  const [amount, setAmount] = useState('')
+  const [paidById, setPaidById] = useState<string | null>(null)
+  const [splitIds, setSplitIds] = useState<Set<string>>(new Set())
 
-    if (!description || isNaN(amount) || amount <= 0 || !paidById) return
-    if (splitAmongIds.length === 0) return
+  const effectivePaidBy = paidById ?? people[0]?.id ?? ''
+  const effectiveSplit =
+    splitIds.size > 0 ? splitIds : new Set(people.map((p) => p.id))
 
-    onAdd({ description, amount, paidById, splitAmongIds })
-    form.reset()
-    form.querySelectorAll<HTMLInputElement>('input[name="split"]').forEach(
-      (cb) => {
-        cb.checked = true
-      },
-    )
+  const toggleSplit = (id: string) => {
+    setSplitIds((prev) => {
+      const next = new Set(prev.size > 0 ? prev : people.map((p) => p.id))
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleSubmit = () => {
+    const parsed = parseFloat(amount)
+    if (!description.trim() || isNaN(parsed) || parsed <= 0 || !effectivePaidBy)
+      return
+    if (effectiveSplit.size === 0) return
+
+    onAdd({
+      description: description.trim(),
+      amount: parsed,
+      paidById: effectivePaidBy,
+      splitAmongIds: Array.from(effectiveSplit),
+    })
+    setDescription('')
+    setAmount('')
+    setSplitIds(new Set())
   }
 
   if (people.length === 0) {
     return (
-      <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6">
-        <p className="text-sm text-slate-500">
+      <View style={[styles.card, styles.placeholder]}>
+        <Text style={styles.subtitle}>
           Add at least one person before recording expenses.
-        </p>
-      </section>
+        </Text>
+      </View>
     )
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900">Add expense</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Record who paid and how to split it.
-      </p>
+    <View style={styles.card}>
+      <Text style={styles.title}>Add expense</Text>
+      <Text style={styles.subtitle}>Record who paid and how to split it.</Text>
 
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
-            Description
-          </label>
-          <input
-            name="description"
-            type="text"
-            placeholder="Dinner, groceries, rent..."
-            required
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-          />
-        </div>
+      <Text style={styles.label}>Description</Text>
+      <TextInput
+        value={description}
+        onChangeText={setDescription}
+        placeholder="Dinner, groceries, rent..."
+        placeholderTextColor={colors.textLight}
+        style={styles.input}
+      />
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
-            Amount
-          </label>
-          <input
-            name="amount"
-            type="number"
-            step="0.01"
-            min="0.01"
-            placeholder="0.00"
-            required
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-          />
-        </div>
+      <Text style={styles.label}>Amount</Text>
+      <TextInput
+        value={amount}
+        onChangeText={setAmount}
+        placeholder="0.00"
+        placeholderTextColor={colors.textLight}
+        keyboardType="decimal-pad"
+        style={styles.input}
+      />
 
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">
-            Paid by
-          </label>
-          <select
-            name="paidBy"
-            required
-            defaultValue={people[0]?.id}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+      <Text style={styles.label}>Paid by</Text>
+      <View style={styles.chipRow}>
+        {people.map((p) => (
+          <Pressable
+            key={p.id}
+            style={[
+              styles.chip,
+              effectivePaidBy === p.id && styles.chipSelected,
+            ]}
+            onPress={() => setPaidById(p.id)}
           >
-            {people.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
+            <Text
+              style={[
+                styles.chipText,
+                effectivePaidBy === p.id && styles.chipTextSelected,
+              ]}
+            >
+              {p.name}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
 
-        <fieldset>
-          <legend className="mb-2 text-xs font-medium text-slate-600">
-            Split among
-          </legend>
-          <div className="flex flex-wrap gap-3">
-            {people.map((p) => (
-              <label
-                key={p.id}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
+      <Text style={styles.label}>Split among</Text>
+      <View style={styles.chipRow}>
+        {people.map((p) => {
+          const selected = effectiveSplit.has(p.id)
+          return (
+            <Pressable
+              key={p.id}
+              style={[styles.chip, selected && styles.chipSelected]}
+              onPress={() => toggleSplit(p.id)}
+            >
+              <Text
+                style={[styles.chipText, selected && styles.chipTextSelected]}
               >
-                <input
-                  type="checkbox"
-                  name="split"
-                  value={p.id}
-                  defaultChecked
-                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
                 {p.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
 
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white hover:bg-emerald-700"
-        >
-          Add expense
-        </button>
-      </form>
-    </section>
+      <Pressable style={styles.submit} onPress={handleSubmit}>
+        <Text style={styles.submitText}>Add expense</Text>
+      </Pressable>
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 20,
+    gap: 8,
+  },
+  placeholder: {
+    borderStyle: 'dashed',
+    backgroundColor: colors.background,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginBottom: 4,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: colors.text,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: colors.background,
+  },
+  chipSelected: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  chipText: {
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  chipTextSelected: {
+    color: colors.primaryDark,
+    fontWeight: '600',
+  },
+  submit: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  submitText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+})

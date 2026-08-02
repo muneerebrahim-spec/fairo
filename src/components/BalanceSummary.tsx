@@ -1,5 +1,7 @@
+import { StyleSheet, Text, View } from 'react-native'
 import type { Balance } from '../types'
 import { formatCurrency } from '../utils/settlement'
+import { colors } from '../theme'
 
 interface BalanceSummaryProps {
   balances: Balance[]
@@ -8,54 +10,101 @@ interface BalanceSummaryProps {
 export function BalanceSummary({ balances }: BalanceSummaryProps) {
   if (balances.length === 0) return null
 
-  const totalSpent = balances.reduce(
+  const isSettled = balances.every((b) => Math.abs(b.net) < 0.01)
+  const totalOutstanding = balances.reduce(
     (sum, b) => sum + (b.net > 0 ? b.net : 0),
     0,
   )
-  const isSettled = balances.every((b) => Math.abs(b.net) < 0.01)
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900">Balances</h2>
-      <p className="mt-1 text-sm text-slate-500">
+    <View style={styles.card}>
+      <Text style={styles.title}>Balances</Text>
+      <Text style={styles.subtitle}>
         {isSettled
           ? 'Everyone is settled up!'
-          : 'Positive means owed money; negative means they owe.'}
-      </p>
+          : 'Positive = owed money · Negative = owes money'}
+      </Text>
 
-      <ul className="mt-4 space-y-2">
-        {balances.map((balance) => (
-          <li
-            key={balance.personId}
-            className="flex items-center justify-between rounded-lg px-3 py-2"
+      {balances.map((balance) => (
+        <View key={balance.personId} style={styles.row}>
+          <Text style={styles.name}>{balance.personName}</Text>
+          <Text
+            style={[
+              styles.net,
+              balance.net > 0.01
+                ? styles.positive
+                : balance.net < -0.01
+                  ? styles.negative
+                  : styles.neutral,
+            ]}
           >
-            <span className="text-sm font-medium text-slate-800">
-              {balance.personName}
-            </span>
-            <span
-              className={`text-sm font-semibold ${
-                balance.net > 0.01
-                  ? 'text-emerald-600'
-                  : balance.net < -0.01
-                    ? 'text-red-500'
-                    : 'text-slate-400'
-              }`}
-            >
-              {Math.abs(balance.net) < 0.01
-                ? 'Settled'
-                : balance.net > 0
-                  ? `+${formatCurrency(balance.net)}`
-                  : `-${formatCurrency(Math.abs(balance.net))}`}
-            </span>
-          </li>
-        ))}
-      </ul>
+            {Math.abs(balance.net) < 0.01
+              ? 'Settled'
+              : balance.net > 0
+                ? `+${formatCurrency(balance.net)}`
+                : `-${formatCurrency(Math.abs(balance.net))}`}
+          </Text>
+        </View>
+      ))}
 
-      {totalSpent > 0.01 && (
-        <p className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-500">
-          Total outstanding: {formatCurrency(totalSpent)}
-        </p>
+      {totalOutstanding > 0.01 && (
+        <Text style={styles.footer}>
+          Total outstanding: {formatCurrency(totalOutstanding)}
+        </Text>
       )}
-    </section>
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 20,
+    gap: 10,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginBottom: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  name: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text,
+  },
+  net: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  positive: {
+    color: colors.primary,
+  },
+  negative: {
+    color: colors.danger,
+  },
+  neutral: {
+    color: colors.textLight,
+  },
+  footer: {
+    fontSize: 13,
+    color: colors.textMuted,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 12,
+    marginTop: 4,
+  },
+})

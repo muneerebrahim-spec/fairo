@@ -1,5 +1,7 @@
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import type { Expense, Person } from '../types'
 import { formatCurrency } from '../utils/settlement'
+import { colors } from '../theme'
 
 interface ExpenseListProps {
   expenses: Expense[]
@@ -12,50 +14,94 @@ export function ExpenseList({ expenses, people, onRemove }: ExpenseListProps) {
     people.find((p) => p.id === id)?.name ?? 'Unknown'
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900">Expenses</h2>
-      <p className="mt-1 text-sm text-slate-500">
+    <View style={styles.card}>
+      <Text style={styles.title}>Expenses</Text>
+      <Text style={styles.subtitle}>
         {expenses.length === 0
           ? 'No expenses recorded yet.'
           : `${expenses.length} expense${expenses.length === 1 ? '' : 's'} recorded.`}
-      </p>
+      </Text>
 
-      {expenses.length > 0 && (
-        <ul className="mt-4 space-y-3">
-          {expenses.map((expense) => (
-            <li
-              key={expense.id}
-              className="flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4"
-            >
-              <div>
-                <p className="font-medium text-slate-900">
-                  {expense.description}
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Paid by {nameById(expense.paidById)} · Split{' '}
-                  {expense.splitAmongIds.length} way
-                  {expense.splitAmongIds.length === 1 ? '' : 's'}
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  {expense.splitAmongIds.map(nameById).join(', ')}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <span className="font-semibold text-emerald-700">
-                  {formatCurrency(expense.amount)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onRemove(expense.id)}
-                  className="text-xs text-slate-400 hover:text-red-500"
-                >
-                  Remove
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+      {expenses.map((expense) => (
+        <View key={expense.id} style={styles.item}>
+          <View style={styles.itemBody}>
+            <Text style={styles.itemTitle}>{expense.description}</Text>
+            <Text style={styles.itemMeta}>
+              Paid by {nameById(expense.paidById)} · Split{' '}
+              {expense.splitAmongIds.length} way
+              {expense.splitAmongIds.length === 1 ? '' : 's'}
+            </Text>
+            <Text style={styles.itemPeople}>
+              {expense.splitAmongIds.map(nameById).join(', ')}
+            </Text>
+          </View>
+          <View style={styles.itemActions}>
+            <Text style={styles.amount}>{formatCurrency(expense.amount)}</Text>
+            <Pressable onPress={() => onRemove(expense.id)}>
+              <Text style={styles.remove}>Remove</Text>
+            </Pressable>
+          </View>
+        </View>
+      ))}
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 20,
+    gap: 12,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginTop: -4,
+  },
+  item: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 14,
+  },
+  itemBody: {
+    flex: 1,
+    gap: 4,
+  },
+  itemTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  itemMeta: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  itemPeople: {
+    fontSize: 12,
+    color: colors.textLight,
+  },
+  itemActions: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  amount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  remove: {
+    fontSize: 12,
+    color: colors.textLight,
+  },
+})
