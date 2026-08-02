@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.muneerebrahim.fairo",
+      "bundleIdentifier": "app.fairo.split",
       "infoPlist": {
         "NSCameraUsageDescription": "Fairo needs camera access to scan receipts.",
         "NSPhotoLibraryUsageDescription": "Fairo needs photo library access to import receipt images."
