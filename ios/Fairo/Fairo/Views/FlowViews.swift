@@ -230,7 +230,10 @@ struct ReviewFullListView: View {
         Binding(
             get: {
                 guard let item = model.activeSplit?.items.first(where: { $0.id == id }) else { return "" }
-                return "\(item.lineTotal)"
+                var value = item.lineTotal
+                var rounded = Decimal()
+                NSDecimalRound(&rounded, &value, 2, .plain)
+                return "\(rounded)"
             },
             set: { newValue in
                 model.updateSplit { split in
