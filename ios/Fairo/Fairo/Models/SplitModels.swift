@@ -111,7 +111,7 @@ struct Split: Identifiable, Codable, Hashable {
     var status: SplitStatus = .scanning
     var percentageAllocations: [UUID: Decimal] = [:]
 
-    static func empty(currencyCode: String = AppSettings.preferredCurrencyCode) -> Split {
+    static func empty(currencyCode: String = Locale.current.currency?.identifier ?? "USD") -> Split {
         Split(title: "New Split", currencyCode: currencyCode)
     }
 }

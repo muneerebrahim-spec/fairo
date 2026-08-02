@@ -32,7 +32,7 @@ final class SplitFlowViewModel {
     }
 
     func startNewSplit() {
-        activeSplit = Split.empty()
+        activeSplit = Split.empty(currencyCode: AppSettings.preferredCurrencyCode)
         activeSplit?.status = .scanning
         selectedItemId = nil
         stepThroughIndex = 0
