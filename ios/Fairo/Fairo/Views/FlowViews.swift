@@ -1,0 +1,258 @@
+import SwiftUI
+
+struct CaptureView: View {
+    @Binding var path: [FlowRoute]
+    @Environment(SplitFlowViewModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    private var theme: FairoColors { scheme == .dark ? .dark : .light }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Scan receipt")
+                .font(.title2.bold())
+                .foregroundStyle(theme.textPrimary)
+            Text("Capture one or more photos, or use the sample receipt to preview the full flow.")
+                .foregroundStyle(theme.textSecondary)
+
+            FairoCard {
+                VStack(spacing: 12) {
+                    FairoPrimaryButton(title: "Use Sample Receipt") {
+                        model.processSampleReceipt()
+                        path.append(.correctionMode)
+                    }
+                    FairoPrimaryButton(title: "Simulate Camera Scan", secondary: true) {
+                        model.processSampleReceipt()
+                        path.append(.correctionMode)
+                    }
+                }
+            }
+            Spacer()
+        }
+        .padding(20)
+        .background(theme.background)
+        .navigationTitle("New Split")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct CorrectionModeView: View {
+    @Binding var path: [FlowRoute]
+    @Environment(SplitFlowViewModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    private var theme: FairoColors { scheme == .dark ? .dark : .light }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("How do you want to review this scan?")
+                .font(.title3.bold())
+                .foregroundStyle(theme.textPrimary)
+            Text("This choice applies to this receipt only.")
+                .foregroundStyle(theme.textSecondary)
+
+            FairoCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Review items one at a time").font(.headline)
+                    Text("Confirm, edit, or disregard each line.").foregroundStyle(theme.textSecondary)
+                    FairoPrimaryButton(title: "Step-through") {
+                        model.updateSplit { $0.correctionMode = .stepThrough }
+                        path.append(.reviewStepThrough)
+                    }
+                }
+            }
+
+            FairoCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Show full list to edit").font(.headline)
+                    Text("See every item at once and edit inline.").foregroundStyle(theme.textSecondary)
+                    FairoPrimaryButton(title: "Full list edit", secondary: true) {
+                        model.updateSplit { $0.correctionMode = .fullListEdit }
+                        path.append(.reviewFullList)
+                    }
+                }
+            }
+            Spacer()
+        }
+        .padding(20)
+        .background(theme.background)
+        .navigationTitle("Review mode")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private func continueAfterReview(path: Binding<[FlowRoute]>, model: SplitFlowViewModel) {
+    if let adj = model.nextUnresolvedAdjustment() {
+        path.wrappedValue.append(.adjustment(adj.id))
+    } else {
+        path.wrappedValue.append(.participants)
+    }
+}
+
+struct ReviewFullListView: View {
+    @Binding var path: [FlowRoute]
+    @Environment(SplitFlowViewModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    private var theme: FairoColors { scheme == .dark ? .dark : .light }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                ForEach(model.activeSplit?.items ?? []) { item in
+                    FairoCard {
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Name", text: nameBinding(for: item.id))
+                            TextField("Total", text: amountBinding(for: item.id))
+                                .keyboardType(.decimalPad)
+                            Button(item.isDisregarded ? "Restore" : "Disregard") {
+                                model.updateSplit { split in
+                                    guard let i = split.items.firstIndex(where: { $0.id == item.id }) else { return }
+                                    split.items[i].isDisregarded.toggle()
+                                }
+                            }
+                            .foregroundStyle(theme.pop)
+                        }
+                    }
+                }
+                FairoPrimaryButton(title: "Continue") {
+                    continueAfterReview(path: $path, model: model)
+                }
+            }
+            .padding(20)
+        }
+        .background(theme.background)
+        .navigationTitle("Review items")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func nameBinding(for id: UUID) -> Binding<String> {
+        Binding(
+            get: { model.activeSplit?.items.first { $0.id == id }?.name ?? "" },
+            set: { newValue in
+                model.updateSplit { split in
+                    guard let i = split.items.firstIndex(where: { $0.id == id }) else { return }
+                    split.items[i].name = newValue
+                }
+            }
+        )
+    }
+
+    private func amountBinding(for id: UUID) -> Binding<String> {
+        Binding(
+            get: {
+                guard let item = model.activeSplit?.items.first(where: { $0.id == id }) else { return "" }
+                return "\(item.lineTotal)"
+            },
+            set: { newValue in
+                model.updateSplit { split in
+                    guard let i = split.items.firstIndex(where: { $0.id == id }) else { return }
+                    split.items[i].lineTotal = Decimal(string: newValue) ?? 0
+                    split.items[i].unitPrice = split.items[i].lineTotal / Decimal(max(split.items[i].quantity, 1))
+                }
+            }
+        )
+    }
+}
+
+struct ReviewStepThroughView: View {
+    @Binding var path: [FlowRoute]
+    @Environment(SplitFlowViewModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    private var theme: FairoColors { scheme == .dark ? .dark : .light }
+
+    private var visibleItems: [LineItem] {
+        model.activeSplit?.items.filter { !$0.isDisregarded } ?? []
+    }
+
+    var body: some View {
+        let item = visibleItems[safe: model.stepThroughIndex]
+        VStack(spacing: 20) {
+            if let item, let split = model.activeSplit {
+                Text("Item \(model.stepThroughIndex + 1) of \(visibleItems.count)")
+                    .foregroundStyle(theme.textSecondary)
+                FairoCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(item.name).font(.title2.bold())
+                        Text(MoneyService.format(item.lineTotal, currencyCode: split.currencyCode))
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(theme.textPrimary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                FairoPrimaryButton(title: "Confirm") {
+                    if model.stepThroughIndex < visibleItems.count - 1 {
+                        model.stepThroughIndex += 1
+                    } else {
+                        continueAfterReview(path: $path, model: model)
+                    }
+                }
+                FairoPrimaryButton(title: "Disregard", secondary: true) {
+                    model.updateSplit { split in
+                        guard let i = split.items.firstIndex(where: { $0.id == item.id }) else { return }
+                        split.items[i].isDisregarded = true
+                    }
+                    if model.stepThroughIndex >= visibleItems.count - 1 {
+                        continueAfterReview(path: $path, model: model)
+                    }
+                }
+            } else {
+                Text("No items to review").onAppear {
+                    continueAfterReview(path: $path, model: model)
+                }
+            }
+            Spacer()
+        }
+        .padding(20)
+        .background(theme.background)
+        .navigationTitle("Review item")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct AdjustmentPromptView: View {
+    let adjustmentId: UUID
+    @Binding var path: [FlowRoute]
+    @Environment(SplitFlowViewModel.self) private var model
+    @Environment(\.colorScheme) private var scheme
+    private var theme: FairoColors { scheme == .dark ? .dark : .light }
+
+    var body: some View {
+        let adj = model.activeSplit?.adjustments.first { $0.id == adjustmentId }
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Adjustment found").font(.title2.bold())
+            if let adj, let split = model.activeSplit {
+                Text("We found \"\(adj.label)\" — how should this be applied?")
+                    .foregroundStyle(theme.textSecondary)
+                FairoCard {
+                    Text(MoneyService.format(adj.amount, currencyCode: split.currencyCode))
+                        .font(.title.bold())
+                }
+                FairoPrimaryButton(title: "Treat as its own line item") {
+                    model.resolveAdjustment(id: adjustmentId, handling: .ownLine)
+                    advance()
+                }
+                FairoPrimaryButton(title: "Apply proportionally", secondary: true) {
+                    model.resolveAdjustment(id: adjustmentId, handling: .proportional)
+                    advance()
+                }
+            }
+            Spacer()
+        }
+        .padding(20)
+        .background(theme.background)
+        .navigationTitle("Adjustment")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func advance() {
+        if let next = model.nextUnresolvedAdjustment() {
+            path.append(.adjustment(next.id))
+        } else {
+            path.append(.participants)
+        }
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}

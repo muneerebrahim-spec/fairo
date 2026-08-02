@@ -34,6 +34,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
+# generated Expo prebuild output (not the native Xcode project at ios/Fairo)
+/ios/*
+!/ios/Fairo/
 /android

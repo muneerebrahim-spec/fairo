@@ -1,0 +1,354 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BF001001 /* FairoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000001 /* FairoApp.swift */; };
+		BF001002 /* SplitModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000002 /* SplitModels.swift */; };
+		BF001003 /* MoneyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000003 /* MoneyService.swift */; };
+		BF001004 /* ReceiptParserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000004 /* ReceiptParserService.swift */; };
+		BF001005 /* ReconciliationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000005 /* ReconciliationService.swift */; };
+		BF001006 /* TipCalculatorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000006 /* TipCalculatorService.swift */; };
+		BF001007 /* ShareTextBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000007 /* ShareTextBuilder.swift */; };
+		BF001008 /* FairoTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000008 /* FairoTheme.swift */; };
+		BF001009 /* SplitFlowViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000009 /* SplitFlowViewModel.swift */; };
+		BF00100A /* FairoComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF00000A /* FairoComponents.swift */; };
+		BF00100B /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF00000B /* RootView.swift */; };
+		BF00100C /* FlowViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF00000C /* FlowViews.swift */; };
+		BF00100D /* SplitFlowViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF00000D /* SplitFlowViews.swift */; };
+		BF00100E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF00000E /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		BF000001 /* FairoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FairoApp.swift; sourceTree = "<group>"; };
+		BF000002 /* SplitModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitModels.swift; sourceTree = "<group>"; };
+		BF000003 /* MoneyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyService.swift; sourceTree = "<group>"; };
+		BF000004 /* ReceiptParserService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiptParserService.swift; sourceTree = "<group>"; };
+		BF000005 /* ReconciliationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconciliationService.swift; sourceTree = "<group>"; };
+		BF000006 /* TipCalculatorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipCalculatorService.swift; sourceTree = "<group>"; };
+		BF000007 /* ShareTextBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareTextBuilder.swift; sourceTree = "<group>"; };
+		BF000008 /* FairoTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FairoTheme.swift; sourceTree = "<group>"; };
+		BF000009 /* SplitFlowViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlowViewModel.swift; sourceTree = "<group>"; };
+		BF00000A /* FairoComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FairoComponents.swift; sourceTree = "<group>"; };
+		BF00000B /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		BF00000C /* FlowViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowViews.swift; sourceTree = "<group>"; };
+		BF00000D /* SplitFlowViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitFlowViews.swift; sourceTree = "<group>"; };
+		BF00000E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		BF000020 /* Fairo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fairo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BF000030 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		BF000040 = {
+			isa = PBXGroup;
+			children = (
+				BF000041 /* Fairo */,
+				BF000042 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BF000041 /* Fairo */ = {
+			isa = PBXGroup;
+			children = (
+				BF000001 /* FairoApp.swift */,
+				BF000043 /* Models */,
+				BF000044 /* Services */,
+				BF000045 /* Theme */,
+				BF000046 /* ViewModels */,
+				BF000047 /* Views */,
+				BF00000E /* Assets.xcassets */,
+			);
+			path = Fairo;
+			sourceTree = "<group>";
+		};
+		BF000042 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BF000020 /* Fairo.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BF000043 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				BF000002 /* SplitModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		BF000044 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				BF000003 /* MoneyService.swift */,
+				BF000004 /* ReceiptParserService.swift */,
+				BF000005 /* ReconciliationService.swift */,
+				BF000006 /* TipCalculatorService.swift */,
+				BF000007 /* ShareTextBuilder.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		BF000045 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				BF000008 /* FairoTheme.swift */,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		BF000046 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				BF000009 /* SplitFlowViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		BF000047 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				BF000048 /* Components */,
+				BF00000B /* RootView.swift */,
+				BF00000C /* FlowViews.swift */,
+				BF00000D /* SplitFlowViews.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		BF000048 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				BF00000A /* FairoComponents.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BF000050 /* Fairo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BF000060 /* Build configuration list for PBXNativeTarget "Fairo" */;
+			buildPhases = (
+				BF000051 /* Sources */,
+				BF000030 /* Frameworks */,
+				BF000052 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Fairo;
+			productName = Fairo;
+			productReference = BF000020 /* Fairo.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BF000070 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					BF000050 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = BF000061 /* Build configuration list for PBXProject "Fairo" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = BF000040;
+			productRefGroup = BF000042 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BF000050 /* Fairo */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BF000052 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BF00100E /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BF000051 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BF001001 /* FairoApp.swift in Sources */,
+				BF001002 /* SplitModels.swift in Sources */,
+				BF001003 /* MoneyService.swift in Sources */,
+				BF001004 /* ReceiptParserService.swift in Sources */,
+				BF001005 /* ReconciliationService.swift in Sources */,
+				BF001006 /* TipCalculatorService.swift in Sources */,
+				BF001007 /* ShareTextBuilder.swift in Sources */,
+				BF001008 /* FairoTheme.swift in Sources */,
+				BF001009 /* SplitFlowViewModel.swift in Sources */,
+				BF00100A /* FairoComponents.swift in Sources */,
+				BF00100B /* RootView.swift in Sources */,
+				BF00100C /* FlowViews.swift in Sources */,
+				BF00100D /* SplitFlowViews.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		BF000062 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		BF000063 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BF000064 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Fairo;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Fairo needs camera access to scan receipts.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Fairo needs photo library access to import receipt images.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fairo.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		BF000065 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Fairo;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Fairo needs camera access to scan receipts.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Fairo needs photo library access to import receipt images.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fairo.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BF000060 /* Build configuration list for PBXNativeTarget "Fairo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BF000064 /* Debug */,
+				BF000065 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BF000061 /* Build configuration list for PBXProject "Fairo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BF000062 /* Debug */,
+				BF000063 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BF000070 /* Project object */;
+}
