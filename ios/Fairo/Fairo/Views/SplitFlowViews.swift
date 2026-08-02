@@ -7,26 +7,81 @@ struct ParticipantsView: View {
     @Environment(\.colorScheme) private var scheme
     private var theme: FairoColors { scheme == .dark ? .dark : .light }
 
+    private var availableSavedPeople: [SavedPerson] {
+        let addedIds = Set(model.activeSplit?.participants.map(\.personOrHouseholdId) ?? [])
+        return model.savedPeople.filter { !addedIds.contains($0.id) }
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Who's splitting?").font(.title2.bold())
-                HStack {
-                    TextField("Name", text: $name)
-                        .textFieldStyle(.roundedBorder)
-                    Button("Add") {
-                        model.addParticipant(name: name)
-                        name = ""
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Who's splitting?")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(theme.textPrimary)
+
+                if !availableSavedPeople.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("SAVED PEOPLE")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(theme.textSecondary)
+                            .tracking(0.6)
+
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(availableSavedPeople) { person in
+                                    Button {
+                                        model.addParticipant(from: person)
+                                    } label: {
+                                        HStack(spacing: 8) {
+                                            AvatarView(name: person.name, colorHex: person.avatarColorHex, size: 36)
+                                            Text(person.name)
+                                                .font(.subheadline.weight(.medium))
+                                                .foregroundStyle(theme.textPrimary)
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(theme.card)
+                                        .clipShape(Capsule())
+                                        .overlay {
+                                            Capsule().stroke(theme.border, lineWidth: 1)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(theme.accentDeep)
                 }
 
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 72))], spacing: 16) {
-                    ForEach(model.activeSplit?.participants ?? []) { p in
-                        VStack(spacing: 6) {
-                            AvatarView(name: p.displayName, colorHex: p.avatarColorHex)
-                            Text(p.displayName).font(.caption).lineLimit(1)
+                FairoCard {
+                    HStack(spacing: 12) {
+                        TextField("Add someone new", text: $name)
+                            .textFieldStyle(.plain)
+                        Button("Add") {
+                            model.addParticipant(name: name)
+                            name = ""
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.accentDeep)
+                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                }
+
+                if !(model.activeSplit?.participants.isEmpty ?? true) {
+                    Text("IN THIS SPLIT")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.textSecondary)
+                        .tracking(0.6)
+
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 16) {
+                        ForEach(model.activeSplit?.participants ?? []) { p in
+                            VStack(spacing: 8) {
+                                AvatarView(name: p.displayName, colorHex: p.avatarColorHex, size: 52)
+                                Text(p.displayName)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                    .foregroundStyle(theme.textPrimary)
+                            }
                         }
                     }
                 }
@@ -91,16 +146,41 @@ struct AssignItemsView: View {
     @Environment(\.colorScheme) private var scheme
     private var theme: FairoColors { scheme == .dark ? .dark : .light }
 
+    private var activeItems: [LineItem] {
+        guard let split = model.activeSplit else { return [] }
+        return ReconciliationService.activeItems(split)
+    }
+
+    private var assignedCount: Int {
+        activeItems.filter { !$0.assignedShares.isEmpty }.count
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Assign items").font(.title2.bold())
-                    Text("Tap an item, then tap people below.")
-                        .foregroundStyle(theme.textSecondary)
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Assign items")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(theme.textPrimary)
+                        Text("Tap an item, then tap people below.")
+                            .foregroundStyle(theme.textSecondary)
+                    }
+
+                    if !activeItems.isEmpty {
+                        HStack {
+                            Text("\(assignedCount) of \(activeItems.count) assigned")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(theme.textSecondary)
+                            Spacer()
+                            if assignedCount == activeItems.count {
+                                PopBadge(label: "All assigned")
+                            }
+                        }
+                    }
 
                     if let split = model.activeSplit {
-                        ForEach(ReconciliationService.activeItems(split)) { item in
+                        ForEach(activeItems) { item in
                             Button {
                                 model.selectedItemId = item.id
                             } label: {
@@ -117,10 +197,24 @@ struct AssignItemsView: View {
                 .padding(20)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
+                if let selectedId = model.selectedItemId,
+                   let item = model.activeSplit?.items.first(where: { $0.id == selectedId }) {
+                    Text("Assigning: \(item.name)")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.textPrimary)
+                        .lineLimit(1)
+                } else {
+                    Text("Select an item above")
+                        .font(.subheadline)
+                        .foregroundStyle(theme.textSecondary)
+                }
+
                 Text("ASSIGN TO")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(theme.textSecondary)
+                    .tracking(0.6)
+
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(model.activeSplit?.participants ?? []) { p in
@@ -131,19 +225,25 @@ struct AssignItemsView: View {
                                     AvatarView(
                                         name: p.displayName,
                                         colorHex: p.avatarColorHex,
+                                        size: 52,
                                         selected: isAssigned(p.id)
                                     )
-                                    Text(p.displayName).font(.caption2).lineLimit(1)
+                                    Text(p.displayName)
+                                        .font(.caption2)
+                                        .lineLimit(1)
+                                        .foregroundStyle(theme.textPrimary)
                                 }
-                                .frame(width: 64)
+                                .frame(width: 68)
                             }
                             .buttonStyle(.plain)
+                            .disabled(model.selectedItemId == nil)
+                            .opacity(model.selectedItemId == nil ? 0.45 : 1)
                         }
                     }
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .padding(.vertical, 14)
             .background(theme.card)
             .overlay(alignment: .top) { Divider() }
 
@@ -162,7 +262,7 @@ struct AssignItemsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if model.selectedItemId == nil {
-                model.selectedItemId = model.activeSplit.flatMap { ReconciliationService.activeItems($0).first?.id }
+                model.selectedItemId = activeItems.first?.id
             }
         }
     }
@@ -314,40 +414,72 @@ struct SummaryView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(spacing: 20) {
                 if let split = model.activeSplit {
                     HeroCard {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Total").font(.subheadline.weight(.semibold)).foregroundStyle(.white.opacity(0.85))
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Total")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.white.opacity(0.85))
+                                Spacer()
+                                if case .balanced = split.reconciliationStatus {
+                                    PopBadge(label: "Balanced")
+                                }
+                            }
                             Text(MoneyService.format(split.total + TipCalculatorService.tipAmount(for: split), currencyCode: split.currencyCode))
-                                .font(.system(size: 36, weight: .bold))
+                                .font(.system(size: 38, weight: .bold))
                                 .foregroundStyle(.white)
                             Text("\(split.title) · \(split.date.formatted(date: .abbreviated, time: .omitted))")
                                 .foregroundStyle(.white.opacity(0.85))
-                            if case .balanced = split.reconciliationStatus {
-                                PopBadge(label: "Balanced")
-                            }
+                            Text("\(split.participants.count) people · \(ReconciliationService.activeItems(split).count) items")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.75))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
-                    ForEach(ReconciliationService.activeItems(split)) { item in
-                        LineItemRowView(item: item, split: split)
-                    }
+                    Text("PER PERSON")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.textSecondary)
+                        .tracking(0.6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
                     ForEach(TipCalculatorService.totals(for: split)) { pt in
+                        let participant = split.participants.first { $0.id == pt.participantId }
                         FairoCard {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(pt.displayName).font(.headline)
+                            HStack(spacing: 14) {
+                                if let participant {
+                                    AvatarView(
+                                        name: participant.displayName,
+                                        colorHex: participant.avatarColorHex,
+                                        size: 44
+                                    )
+                                }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(pt.displayName)
+                                        .font(.headline)
+                                        .foregroundStyle(theme.textPrimary)
+                                    Text("items \(MoneyService.format(pt.itemsTotal, currencyCode: split.currencyCode)) · tax \(MoneyService.format(pt.taxShare, currencyCode: split.currencyCode)) · tip \(MoneyService.format(pt.tipShare, currencyCode: split.currencyCode))")
+                                        .font(.caption)
+                                        .foregroundStyle(theme.textSecondary)
+                                }
+                                Spacer()
                                 Text(MoneyService.format(pt.total, currencyCode: split.currencyCode))
-                                    .font(.title2.bold())
+                                    .font(.title3.bold())
                                     .foregroundStyle(theme.accentDeep)
-                                Text("items \(MoneyService.format(pt.itemsTotal, currencyCode: split.currencyCode)) + tax \(MoneyService.format(pt.taxShare, currencyCode: split.currencyCode)) + tip \(MoneyService.format(pt.tipShare, currencyCode: split.currencyCode))")
-                                    .font(.caption)
-                                    .foregroundStyle(theme.textSecondary)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
+                    }
+
+                    Text("ITEMS")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.textSecondary)
+                        .tracking(0.6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    ForEach(ReconciliationService.activeItems(split)) { item in
+                        LineItemRowView(item: item, split: split)
                     }
 
                     ShareLink(item: ShareTextBuilder.build(for: split)) {

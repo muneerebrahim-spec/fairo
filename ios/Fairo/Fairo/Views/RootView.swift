@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 enum FlowRoute: Hashable {
@@ -16,6 +17,7 @@ enum FlowRoute: Hashable {
 }
 
 struct RootView: View {
+    @Environment(\.modelContext) private var modelContext
     @State private var model = SplitFlowViewModel()
     @State private var path: [FlowRoute] = []
 
@@ -56,6 +58,9 @@ struct RootView: View {
         }
         .environment(model)
         .background(theme.background.ignoresSafeArea())
+        .onAppear {
+            model.configure(context: modelContext)
+        }
     }
 }
 
@@ -67,7 +72,7 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Fairo")
                         .font(.system(size: 34, weight: .bold))
@@ -78,9 +83,31 @@ struct HomeView: View {
                 }
                 .padding(.top, 8)
 
-                FairoPrimaryButton(title: "New Split") {
-                    model.startNewSplit()
-                    path.append(.capture)
+                HeroCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Scan. Assign. Done.")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("Snap a receipt, assign items to friends, and share who owes what.")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.white.opacity(0.88))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button {
+                            model.startNewSplit()
+                            path.append(.capture)
+                        } label: {
+                            Text("New Split")
+                                .font(.system(size: 16, weight: .semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 15)
+                                .background(Color.white)
+                                .foregroundStyle(theme.accentDeep)
+                                .clipShape(RoundedRectangle(cornerRadius: FairoTheme.buttonRadius, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 4)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 Text("HISTORY")
@@ -90,8 +117,17 @@ struct HomeView: View {
 
                 if model.history.isEmpty {
                     FairoCard {
-                        Text("No saved splits yet. Scan a receipt to get started.")
-                            .foregroundStyle(theme.textSecondary)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.title2)
+                                .foregroundStyle(theme.textSecondary)
+                            Text("No saved splits yet")
+                                .font(.headline)
+                                .foregroundStyle(theme.textPrimary)
+                            Text("Scan a receipt to get started.")
+                                .foregroundStyle(theme.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 } else {
                     ForEach(model.history) { split in
@@ -100,15 +136,23 @@ struct HomeView: View {
                             path.append(.summary(readonly: true, splitId: split.id))
                         } label: {
                             FairoCard {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(split.title)
-                                        .font(.system(size: 17, weight: .semibold))
-                                        .foregroundStyle(theme.textPrimary)
-                                    Text("\(split.date.formatted(date: .abbreviated, time: .omitted)) · \(MoneyService.format(split.total, currencyCode: split.currencyCode))")
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(theme.textSecondary)
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(split.title)
+                                            .font(.system(size: 17, weight: .semibold))
+                                            .foregroundStyle(theme.textPrimary)
+                                        Text(split.date.formatted(date: .abbreviated, time: .omitted))
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(theme.textSecondary)
+                                        Text("\(split.participants.count) people · \(ReconciliationService.activeItems(split).count) items")
+                                            .font(.caption)
+                                            .foregroundStyle(theme.textSecondary)
+                                    }
+                                    Spacer()
+                                    Text(MoneyService.format(split.total, currencyCode: split.currencyCode))
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundStyle(theme.accentDeep)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
                         .buttonStyle(.plain)
