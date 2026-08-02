@@ -2,6 +2,8 @@
 
 Native SwiftUI iOS app implementing **Fairo Phase 1** per the build spec and Sage v2 design system.
 
+**Design spec for local agent work:** [`DESIGN-SPEC.md`](DESIGN-SPEC.md)
+
 ## Requirements
 
 - macOS with **Xcode 16+**
