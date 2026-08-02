@@ -1,6 +1,12 @@
 import SwiftUI
 import VisionKit
 
+enum DocumentScannerSupport {
+    static var isAvailable: Bool {
+        VNDocumentCameraViewController.isSupported
+    }
+}
+
 struct DocumentScannerView: UIViewControllerRepresentable {
     var onComplete: ([UIImage]) -> Void
     var onCancel: () -> Void
@@ -10,6 +16,10 @@ struct DocumentScannerView: UIViewControllerRepresentable {
     }
 
     func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
+        guard DocumentScannerSupport.isAvailable else {
+            DispatchQueue.main.async { onCancel() }
+            return VNDocumentCameraViewController()
+        }
         let controller = VNDocumentCameraViewController()
         controller.delegate = context.coordinator
         return controller

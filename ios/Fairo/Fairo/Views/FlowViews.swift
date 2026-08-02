@@ -35,7 +35,19 @@ struct CaptureView: View {
                 }
 
                 FairoPrimaryButton(title: "Scan with Camera") {
-                    showScanner = true
+                    if DocumentScannerSupport.isAvailable {
+                        showScanner = true
+                    } else {
+                        model.scanError = "Document scanning requires a physical iPhone. Use Sample Receipt in the simulator."
+                    }
+                }
+                .disabled(!DocumentScannerSupport.isAvailable)
+                .opacity(DocumentScannerSupport.isAvailable ? 1 : 0.5)
+
+                if !DocumentScannerSupport.isAvailable {
+                    Text("Camera scan is unavailable in the simulator — use Sample Receipt below.")
+                        .font(.footnote)
+                        .foregroundStyle(theme.textSecondary)
                 }
 
                 FairoPrimaryButton(title: "Use Sample Receipt", secondary: true) {
