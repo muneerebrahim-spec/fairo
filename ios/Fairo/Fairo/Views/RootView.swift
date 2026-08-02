@@ -92,22 +92,12 @@ struct HomeView: View {
                             .font(.system(size: 15))
                             .foregroundStyle(.white.opacity(0.88))
                             .fixedSize(horizontal: false, vertical: true)
-                        Button {
-                            model.startNewSplit()
-                            path.append(.capture)
-                        } label: {
-                            Text("New Split")
-                                .font(.system(size: 16, weight: .semibold))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 15)
-                                .background(Color.white)
-                                .foregroundStyle(theme.accentDeep)
-                                .clipShape(RoundedRectangle(cornerRadius: FairoTheme.buttonRadius, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.top, 4)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                FairoPrimaryButton(title: "New Split") {
+                    model.startNewSplit()
+                    path.append(.capture)
                 }
 
                 Text("HISTORY")
