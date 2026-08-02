@@ -294,6 +294,12 @@ No swipe gestures in Phase 1. Use standard back chevron navigation.
 | SwiftData | ✅ | ✅ |
 | Haptics | Silent no-op | ✅ |
 
+### OCR expectations (Phase 1)
+
+Real receipts vary widely (US `$`, South African `R`, `@` unit prices, service charges, weight-based lines). The parser handles common formats but **will not be 100% accurate**. Users should always use the **Review items** step to confirm, edit, or disregard lines. Low-confidence items show a gold `?` badge.
+
+Supported patterns include: `1 Item 12.00`, `2x Item 9.00`, `2 Item @ 19.00 38.00`, `Item: $7.00`, `Subtotal/Tax/Total`, `To Pay`, service charges as adjustments.
+
 ---
 
 ## 8. File map for agents
