@@ -38,7 +38,7 @@ enum CorrectionMode: String, Codable {
     case stepThrough, fullListEdit
 }
 
-enum ReconciliationStatus: Codable, Equatable {
+enum ReconciliationStatus: Codable, Equatable, Hashable {
     case balanced
     case leftoverUnassigned(amount: Decimal)
     case overassigned(amount: Decimal)
