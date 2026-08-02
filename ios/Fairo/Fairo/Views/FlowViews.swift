@@ -79,6 +79,7 @@ struct CorrectionModeView: View {
     }
 }
 
+@MainActor
 private func continueAfterReview(path: Binding<[FlowRoute]>, model: SplitFlowViewModel) {
     if let adj = model.nextUnresolvedAdjustment() {
         path.wrappedValue.append(.adjustment(adj.id))
