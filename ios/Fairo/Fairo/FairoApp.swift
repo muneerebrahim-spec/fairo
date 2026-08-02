@@ -6,12 +6,13 @@ struct FairoApp: App {
     private let modelContainer: ModelContainer
 
     init() {
+        let schema = Schema([SavedPersonEntity.self, PersistedSplitEntity.self])
         do {
-            modelContainer = try ModelContainer(
-                for: SavedPersonEntity.self, PersistedSplitEntity.self
-            )
+            modelContainer = try ModelContainer(for: schema)
         } catch {
-            fatalError("Failed to create SwiftData container: \(error.localizedDescription)")
+            // Fall back to in-memory storage so the app still launches.
+            let memory = ModelConfiguration(isStoredInMemoryOnly: true)
+            modelContainer = try! ModelContainer(for: schema, configurations: memory)
         }
     }
 

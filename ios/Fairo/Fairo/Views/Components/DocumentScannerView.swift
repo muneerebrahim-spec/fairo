@@ -1,11 +1,18 @@
 import SwiftUI
-import VisionKit
+import UIKit
 
 enum DocumentScannerSupport {
     static var isAvailable: Bool {
-        VNDocumentCameraViewController.isSupported
+        #if targetEnvironment(simulator)
+        return false
+        #else
+        return VNDocumentCameraViewController.isSupported
+        #endif
     }
 }
+
+#if !targetEnvironment(simulator)
+import VisionKit
 
 struct DocumentScannerView: UIViewControllerRepresentable {
     var onComplete: ([UIImage]) -> Void
@@ -16,10 +23,6 @@ struct DocumentScannerView: UIViewControllerRepresentable {
     }
 
     func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
-        guard DocumentScannerSupport.isAvailable else {
-            DispatchQueue.main.async { onCancel() }
-            return VNDocumentCameraViewController()
-        }
         let controller = VNDocumentCameraViewController()
         controller.delegate = context.coordinator
         return controller
@@ -59,3 +62,13 @@ struct DocumentScannerView: UIViewControllerRepresentable {
         }
     }
 }
+#else
+struct DocumentScannerView: View {
+    var onComplete: ([UIImage]) -> Void
+    var onCancel: () -> Void
+
+    var body: some View {
+        Color.clear.onAppear { onCancel() }
+    }
+}
+#endif

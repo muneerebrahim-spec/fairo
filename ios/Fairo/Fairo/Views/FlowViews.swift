@@ -90,19 +90,21 @@ struct CaptureView: View {
         .navigationTitle("New Split")
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(isPresented: $showScanner) {
-            DocumentScannerView(
-                onComplete: { images in
-                    showScanner = false
-                    Task {
-                        await model.processScannedImages(images)
-                        if model.scanError == nil {
-                            path.append(.correctionMode)
+            if DocumentScannerSupport.isAvailable {
+                DocumentScannerView(
+                    onComplete: { images in
+                        showScanner = false
+                        Task {
+                            await model.processScannedImages(images)
+                            if model.scanError == nil {
+                                path.append(.correctionMode)
+                            }
                         }
-                    }
-                },
-                onCancel: { showScanner = false }
-            )
-            .ignoresSafeArea()
+                    },
+                    onCancel: { showScanner = false }
+                )
+                .ignoresSafeArea()
+            }
         }
     }
 }
