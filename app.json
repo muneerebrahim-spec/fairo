@@ -1,23 +1,27 @@
 {
   "expo": {
-    "name": "FairSplit",
-    "slug": "fairsplit",
+    "name": "Fairo",
+    "slug": "fairo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ecfdf5"
+      "backgroundColor": "#F6F7F2"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fairsplit.app"
+      "bundleIdentifier": "com.fairo.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Fairo needs camera access to scan receipts.",
+        "NSPhotoLibraryUsageDescription": "Fairo needs photo library access to import receipt images."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ecfdf5",
+        "backgroundColor": "#F6F7F2",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -25,6 +29,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Fairo needs photo library access to import receipt images.",
+          "cameraPermission": "Fairo needs camera access to scan receipts."
+        }
+      ]
+    ]
   }
 }
