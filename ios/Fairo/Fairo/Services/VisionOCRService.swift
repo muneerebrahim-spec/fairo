@@ -40,13 +40,12 @@ enum VisionOCRService {
         return combined
     }
 
-    /// Vision returns observations in arbitrary order — sort top-to-bottom, left-to-right,
-    /// and merge fragments on the same visual row into one line.
+    /// Sort top-to-bottom, group by row, and join left/right columns (item name + price).
     private static func linesFromObservations(_ observations: [VNRecognizedTextObservation]) -> [String] {
         let sorted = observations.sorted { lhs, rhs in
             let ly = 1 - lhs.boundingBox.midY
             let ry = 1 - rhs.boundingBox.midY
-            if abs(ly - ry) > 0.012 { return ly < ry }
+            if abs(ly - ry) > 0.02 { return ly < ry }
             return lhs.boundingBox.minX < rhs.boundingBox.minX
         }
 
@@ -54,20 +53,43 @@ enum VisionOCRService {
         for observation in sorted {
             if let lastGroup = groups.last,
                let lastObservation = lastGroup.last,
-               abs(observation.boundingBox.midY - lastObservation.boundingBox.midY) <= 0.012 {
+               abs(observation.boundingBox.midY - lastObservation.boundingBox.midY) <= 0.02 {
                 groups[groups.count - 1].append(observation)
             } else {
                 groups.append([observation])
             }
         }
 
-        return groups.compactMap { group in
-            let text = group
-                .sorted { $0.boundingBox.minX < $1.boundingBox.minX }
-                .compactMap { $0.topCandidates(1).first?.string }
-                .joined(separator: " ")
-                .trimmingCharacters(in: .whitespaces)
-            return text.isEmpty ? nil : text
+        return groups.compactMap { assembleLine(from: $0) }
+    }
+
+    /// Merges fragments on the same row. Wide horizontal gaps become column joins:
+    /// e.g. "1 Med Plate" + "75.00" → "1 Med Plate 75.00"
+    private static func assembleLine(from group: [VNRecognizedTextObservation]) -> String? {
+        let sorted = group.sorted { $0.boundingBox.minX < $1.boundingBox.minX }
+        guard !sorted.isEmpty else { return nil }
+
+        var columns: [String] = []
+        var current: [String] = []
+        var lastMaxX: CGFloat = -1
+
+        for observation in sorted {
+            guard let text = observation.topCandidates(1).first?.string,
+                  !text.trimmingCharacters(in: .whitespaces).isEmpty else { continue }
+
+            let minX = observation.boundingBox.minX
+            if lastMaxX >= 0, minX - lastMaxX > 0.12 {
+                columns.append(current.joined(separator: " "))
+                current = []
+            }
+            current.append(text)
+            lastMaxX = observation.boundingBox.maxX
         }
+        if !current.isEmpty {
+            columns.append(current.joined(separator: " "))
+        }
+
+        let line = columns.joined(separator: " ").trimmingCharacters(in: .whitespaces)
+        return line.isEmpty ? nil : line
     }
 }

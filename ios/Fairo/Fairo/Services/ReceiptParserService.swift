@@ -95,17 +95,66 @@ enum ReceiptParserService {
     // MARK: - Normalization
 
     private static func normalizeLines(_ text: String) -> [String] {
-        text.components(separatedBy: .newlines)
+        let raw = text.components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
-            .filter { !shouldSkipLine($0) }
+
+        let merged = mergeSplitReceiptLines(raw)
+        return merged.filter { !shouldSkipLine($0) }
+    }
+
+    /// Join item names with orphan prices on the next line, and `@` unit-price lines with line totals.
+    private static func mergeSplitReceiptLines(_ lines: [String]) -> [String] {
+        var merged: [String] = []
+        var index = 0
+
+        while index < lines.count {
+            let line = lines[index]
+
+            if index + 1 < lines.count {
+                let next = lines[index + 1]
+
+                if line.contains("@"), trailingAmount(line) == nil, isPriceOnlyLine(next) {
+                    merged.append("\(line) \(next)")
+                    index += 2
+                    continue
+                }
+
+                if trailingAmount(line) == nil,
+                   looksLikeItemDescription(line),
+                   isPriceOnlyLine(next) {
+                    merged.append("\(line) \(next)")
+                    index += 2
+                    continue
+                }
+            }
+
+            merged.append(line)
+            index += 1
+        }
+        return merged
+    }
+
+    private static func isPriceOnlyLine(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        let lower = trimmed.lowercased()
+        if lower.contains("total") || lower.contains("subtotal") || lower.contains("tax") { return false }
+        return trimmed.range(of: #"^[\$R£€]?\s*\d[\d,.\s]*$"#, options: .regularExpression) != nil
+    }
+
+    private static func looksLikeItemDescription(_ line: String) -> Bool {
+        let lower = line.lowercased()
+        if lower.contains("total") || lower.contains("subtotal") { return false }
+        if lower == "eat in" || lower == "take away" || lower == "takeaway" { return false }
+        return line.range(of: #"^\d+\s+\S"#, options: .regularExpression) != nil
+            || line.range(of: #"^\d+\s*[x×X]"#, options: .regularExpression) != nil
     }
 
     private static func shouldSkipLine(_ line: String) -> Bool {
         let lower = line.lowercased()
         if lower.count < 2 { return true }
         if line.filter({ $0 == "_" }).count > 4 { return true }
-        if line.allSatisfy({ !$0.isLetter }) { return true }
+        if isPriceOnlyLine(line) { return true }
 
         let skipContains = [
             "tel:", "phone:", "vat #", "vat no", "transaction type", "authorization:",
@@ -207,6 +256,7 @@ enum ReceiptParserService {
             #"[\$R£€]\s*([\d\s,]+\.\d{2})\s*$"#,
             #"([\d\s,]+\.\d{2})\s*$"#,
             #"[\$R£€]\s*([\d\s,]+)\s*$"#,
+            #"([\d]+)\s*$"#,
         ]
         for pattern in patterns {
             guard let match = line.range(of: pattern, options: .regularExpression) else { continue }
@@ -243,9 +293,9 @@ enum ReceiptParserService {
         return nil
     }
 
-    /// `2 Sprite 330ml @ 19.00 38.00` or `1940 Chicken Wingz @R0.22 R426.80`
+    /// `2 Sprite 330ml @ 19.00 38.00` or `2 Sprite 330ml @ 19.00` (computes line total)
     private static func parseAtPriceLine(_ line: String) -> LineItem? {
-        guard line.contains("@"), let lineTotal = trailingAmount(line) else { return nil }
+        guard line.contains("@") else { return nil }
         let parts = line.split(separator: "@", maxSplits: 1).map(String.init)
         guard parts.count == 2 else { return nil }
 
@@ -257,8 +307,21 @@ enum ReceiptParserService {
         guard !name.isEmpty else { return nil }
 
         if qty > 50 {
-            return makeItem(name: left, quantity: 1, lineTotal: lineTotal, confidence: 0.65)
+            if let lineTotal = trailingAmount(line) {
+                return makeItem(name: left, quantity: 1, lineTotal: lineTotal, confidence: 0.65)
+            }
+            return nil
         }
+
+        if let lineTotal = trailingAmount(line) {
+            return makeItem(name: name, quantity: qty, lineTotal: lineTotal)
+        }
+
+        let unitPart = parts[1].trimmingCharacters(in: .whitespaces)
+        guard let unitPrice = parseAmountString(unitPart.components(separatedBy: " ").first ?? unitPart) else {
+            return nil
+        }
+        let lineTotal = unitPrice * Decimal(qty)
         return makeItem(name: name, quantity: qty, lineTotal: lineTotal)
     }
 
@@ -276,7 +339,7 @@ enum ReceiptParserService {
         if let qtyMatch = remainder.range(of: #"^(\d+)\s*[x×X]\s*"#, options: .regularExpression) {
             quantity = Int(remainder[qtyMatch].filter(\.isNumber)) ?? 1
             name = String(remainder[qtyMatch.upperBound...]).trimmingCharacters(in: .whitespaces)
-        } else if let qtyMatch = remainder.range(of: #"^(\d+)\.?\s+"#, options: .regularExpression) {
+        } else if let qtyMatch = remainder.range(of: #"^(\d+)[-.\s]+"#, options: .regularExpression) {
             quantity = Int(remainder[qtyMatch].filter(\.isNumber)) ?? 1
             name = String(remainder[qtyMatch.upperBound...]).trimmingCharacters(in: .whitespaces)
         }
@@ -358,6 +421,23 @@ extension ReceiptParserService {
     1 Ex Chillies 8.00
     1 Still Water500ml 14.00
     2 Espresso Dbl @ 20.00 40.00
+    Total 255.00
+    """
+
+    /// Simulates Vision OCR splitting name and price onto separate lines.
+    static let fixtureWoolworthsSplitOCR = """
+    Woolworths Cafe
+    Rosebank
+    Eat In
+    1 Beef Brg 80.00
+    1 Med Plate
+    75.00
+    2 Sprite 330ml @ 19.00
+    38.00
+    1 Ex Chillies 8.00
+    1 Still Water500ml 14.00
+    2 Espresso Dbl @ 20.00
+    40.00
     Total 255.00
     """
 
