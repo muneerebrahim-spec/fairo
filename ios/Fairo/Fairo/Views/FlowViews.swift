@@ -184,25 +184,32 @@ struct ReviewFullListView: View {
     @Environment(\.colorScheme) private var scheme
     private var theme: FairoColors { scheme == .dark ? .dark : .light }
 
+    private var items: [LineItem] {
+        model.activeSplit?.items ?? []
+    }
+
     var body: some View {
         ScrollView {
-            VStack(spacing: 12) {
-                ForEach(model.activeSplit?.items ?? []) { item in
-                    FairoCard {
-                        VStack(alignment: .leading, spacing: 8) {
-                            TextField("Name", text: nameBinding(for: item.id))
-                            TextField("Total", text: amountBinding(for: item.id))
-                                .keyboardType(.decimalPad)
-                            Button(item.isDisregarded ? "Restore" : "Disregard") {
-                                model.updateSplit { split in
-                                    guard let i = split.items.firstIndex(where: { $0.id == item.id }) else { return }
-                                    split.items[i].isDisregarded.toggle()
-                                }
-                            }
-                            .foregroundStyle(theme.pop)
-                        }
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Check each line from your receipt")
+                        .font(.headline)
+                        .foregroundStyle(theme.textPrimary)
+                    Text("Each card is one item. Edit the name, quantity, or line total if the scan got it wrong.")
+                        .font(.subheadline)
+                        .foregroundStyle(theme.textSecondary)
+                    if !items.isEmpty {
+                        Text("\(items.count) items scanned")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(theme.textSecondary)
+                            .padding(.top, 4)
                     }
                 }
+
+                ForEach(items) { item in
+                    reviewItemCard(item)
+                }
+
                 FairoPrimaryButton(title: "Continue") {
                     continueAfterReview(path: $path, model: model)
                 }
@@ -214,6 +221,87 @@ struct ReviewFullListView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    @ViewBuilder
+    private func reviewItemCard(_ item: LineItem) -> some View {
+        let split = model.activeSplit
+        FairoCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("Line item")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.textSecondary)
+                        .tracking(0.5)
+                    Spacer()
+                    if let conf = item.ocrConfidence, conf < 0.75 {
+                        PopBadge(label: "Check this")
+                    }
+                    if item.isDisregarded {
+                        PopBadge(label: "Disregarded")
+                    }
+                }
+
+                labeledField(title: "Item name") {
+                    TextField("e.g. Beef Burger", text: nameBinding(for: item.id))
+                        .textFieldStyle(.plain)
+                        .foregroundStyle(theme.textPrimary)
+                }
+
+                HStack(alignment: .top, spacing: 12) {
+                    labeledField(title: "Qty") {
+                        TextField("1", text: quantityBinding(for: item.id))
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.center)
+                            .textFieldStyle(.plain)
+                            .foregroundStyle(theme.textPrimary)
+                    }
+                    .frame(width: 72)
+
+                    labeledField(title: "Line total") {
+                        TextField("0.00", text: amountBinding(for: item.id))
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(.plain)
+                            .foregroundStyle(theme.textPrimary)
+                    }
+                }
+
+                if item.quantity > 1, let split {
+                    Text("Unit price: \(MoneyService.format(item.unitPrice, currencyCode: split.currencyCode)) each")
+                        .font(.caption)
+                        .foregroundStyle(theme.textSecondary)
+                }
+
+                Button(item.isDisregarded ? "Restore item" : "Disregard item") {
+                    model.updateSplit { split in
+                        guard let i = split.items.firstIndex(where: { $0.id == item.id }) else { return }
+                        split.items[i].isDisregarded.toggle()
+                    }
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(theme.pop)
+            }
+            .opacity(item.isDisregarded ? 0.5 : 1)
+        }
+    }
+
+    @ViewBuilder
+    private func labeledField<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(theme.textSecondary)
+                .tracking(0.6)
+            content()
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(theme.background)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(theme.border, lineWidth: 1)
+                }
+        }
+    }
+
     private func nameBinding(for id: UUID) -> Binding<String> {
         Binding(
             get: { model.activeSplit?.items.first { $0.id == id }?.name ?? "" },
@@ -221,6 +309,23 @@ struct ReviewFullListView: View {
                 model.updateSplit { split in
                     guard let i = split.items.firstIndex(where: { $0.id == id }) else { return }
                     split.items[i].name = newValue
+                }
+            }
+        )
+    }
+
+    private func quantityBinding(for id: UUID) -> Binding<String> {
+        Binding(
+            get: {
+                guard let item = model.activeSplit?.items.first(where: { $0.id == id }) else { return "1" }
+                return "\(item.quantity)"
+            },
+            set: { newValue in
+                model.updateSplit { split in
+                    guard let i = split.items.firstIndex(where: { $0.id == id }) else { return }
+                    let qty = max(Int(newValue.filter(\.isNumber)) ?? 1, 1)
+                    split.items[i].quantity = qty
+                    split.items[i].unitPrice = split.items[i].lineTotal / Decimal(qty)
                 }
             }
         )
