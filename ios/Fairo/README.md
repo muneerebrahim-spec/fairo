@@ -68,4 +68,4 @@ Fairo/
 
 ## Bundle ID
 
-`com.muneerebrahim.fairo` — change in Xcode if needed.
+`app.fairo.split` — change in Xcode if needed.
