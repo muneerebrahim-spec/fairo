@@ -369,10 +369,33 @@ struct ReviewStepThroughView: View {
                     .foregroundStyle(theme.textSecondary)
                 FairoCard {
                     VStack(alignment: .leading, spacing: 12) {
+                        Text("ITEM NAME")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(theme.textSecondary)
+                            .tracking(0.6)
                         Text(item.name).font(.title2.bold())
-                        Text(MoneyService.format(item.lineTotal, currencyCode: split.currencyCode))
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(theme.textPrimary)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("QTY")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(theme.textSecondary)
+                                Text("\(item.quantity)")
+                                    .font(.title3.bold())
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("LINE TOTAL")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(theme.textSecondary)
+                                Text(MoneyService.format(item.lineTotal, currencyCode: split.currencyCode))
+                                    .font(.title3.bold())
+                            }
+                        }
+                        if item.quantity > 1 {
+                            Text("Unit price: \(MoneyService.format(item.unitPrice, currencyCode: split.currencyCode)) each")
+                                .font(.caption)
+                                .foregroundStyle(theme.textSecondary)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

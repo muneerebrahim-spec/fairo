@@ -68,20 +68,56 @@ struct HomeView: View {
     @Binding var path: [FlowRoute]
     @Environment(SplitFlowViewModel.self) private var model
     @Environment(\.colorScheme) private var scheme
+    @State private var showSettings = false
+    @State private var preferredCurrency = AppSettings.preferredCurrencyCode
     private var theme: FairoColors { scheme == .dark ? .dark : .light }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Fairo")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundStyle(theme.textPrimary)
-                    Text("Split bills fairly")
-                        .font(.system(size: 15))
-                        .foregroundStyle(theme.textSecondary)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Fairo")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundStyle(theme.textPrimary)
+                        Text("Split bills fairly")
+                            .font(.system(size: 15))
+                            .foregroundStyle(theme.textSecondary)
+                    }
+                    Spacer()
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(theme.textSecondary)
+                            .padding(8)
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.top, 8)
+
+                Button {
+                    showSettings = true
+                } label: {
+                    FairoCard {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Default currency")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(theme.textPrimary)
+                                Text(AppSettings.currencyLabel(for: preferredCurrency))
+                                    .font(.caption)
+                                    .foregroundStyle(theme.textSecondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(theme.textSecondary)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
 
                 HeroCard {
                     VStack(alignment: .leading, spacing: 12) {
@@ -153,5 +189,10 @@ struct HomeView: View {
         }
         .background(theme.background)
         .navigationBarHidden(true)
+        .sheet(isPresented: $showSettings) {
+            SettingsView {
+                preferredCurrency = AppSettings.preferredCurrencyCode
+            }
+        }
     }
 }

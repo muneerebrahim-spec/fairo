@@ -212,6 +212,7 @@ enum ReceiptParserService {
 
     private static func detectCurrency(in text: String) -> String? {
         if text.range(of: #"\bR\s?\d"#, options: .regularExpression) != nil { return "ZAR" }
+        if text.contains("R") && text.lowercased().contains("vat #") { return "ZAR" }
         if text.contains("$") { return "USD" }
         if text.range(of: #"£\s?\d"#, options: .regularExpression) != nil { return "GBP" }
         if text.range(of: #"€\s?\d"#, options: .regularExpression) != nil { return "EUR" }
