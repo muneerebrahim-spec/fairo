@@ -2,6 +2,8 @@
 
 Native SwiftUI iOS app implementing **Fairo Phase 1** per the build spec and Sage v2 design system.
 
+**Design spec for local agent work:** [`DESIGN-SPEC.md`](DESIGN-SPEC.md)
+
 ## Requirements
 
 - macOS with **Xcode 16+**
@@ -21,20 +23,30 @@ Native SwiftUI iOS app implementing **Fairo Phase 1** per the build spec and Sag
 4. Choose an **iPhone simulator** (e.g. iPhone 16) or your connected iPhone
 5. Press **⌘R** to build and run
 
-## First-run testing (no camera needed)
+## First-run testing
+
+**Without camera (simulator):**
 
 1. Tap **New Split**
 2. Tap **Use Sample Receipt**
 3. Choose **Full list edit** or **Step-through**
 4. Add participants → **By Item** → assign items → tip → summary
 
+**With camera (device):**
+
+1. Tap **New Split** → **Scan with Camera**
+2. Capture the receipt — Vision OCR reads line items automatically
+3. Continue through review, participants, assign, tip, summary
+
+Saved people appear as quick-add chips on the Participants screen after you've added them once.
+
 ## Project structure
 
 ```
 Fairo/
-├── FairoApp.swift          App entry
-├── Models/                 Split, LineItem, TipConfig, etc.
-├── Services/               Receipt parser, reconciliation, tip math
+├── FairoApp.swift          App entry + SwiftData container
+├── Models/                 Split models + SwiftData entities
+├── Services/               OCR, parser, persistence, reconciliation, tip math
 ├── ViewModels/             SplitFlowViewModel (MVVM)
 ├── Views/                  SwiftUI screens + navigation
 ├── Theme/                  Sage v2 design tokens
@@ -52,19 +64,14 @@ Fairo/
 
 - Full split flow (capture → review → participants → assign → reconcile → tip → summary)
 - Sage v2 UI (gradient hero card, gold badges, rounded-square avatars, dark mode)
-- Sample receipt OCR parsing
+- VisionKit document scanner + Vision OCR for real receipt capture
+- Sample receipt fallback for simulator testing
 - Item assignment with haptics
 - Reconciliation engine
 - Tip presets and per-person totals
 - Share sheet text export
-- Local history (UserDefaults)
-
-## Coming next
-
-- VisionKit document scanner (`VNDocumentCameraViewController`)
-- Live Vision OCR (`VNRecognizeTextRequest`)
-- SwiftData persistence
-- Saved people / households
+- SwiftData persistence (split history + saved people)
+- Legacy UserDefaults history auto-migration
 
 ## Bundle ID
 

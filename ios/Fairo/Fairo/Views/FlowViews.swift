@@ -4,34 +4,108 @@ struct CaptureView: View {
     @Binding var path: [FlowRoute]
     @Environment(SplitFlowViewModel.self) private var model
     @Environment(\.colorScheme) private var scheme
+    @State private var showScanner = false
     private var theme: FairoColors { scheme == .dark ? .dark : .light }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Scan receipt")
-                .font(.title2.bold())
-                .foregroundStyle(theme.textPrimary)
-            Text("Capture one or more photos, or use the sample receipt to preview the full flow.")
-                .foregroundStyle(theme.textSecondary)
+        ZStack {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Scan receipt")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(theme.textPrimary)
+                    Text("Capture one or more pages with your camera. We'll read the line items automatically.")
+                        .font(.system(size: 15))
+                        .foregroundStyle(theme.textSecondary)
+                }
 
-            FairoCard {
-                VStack(spacing: 12) {
-                    FairoPrimaryButton(title: "Use Sample Receipt") {
-                        model.processSampleReceipt()
-                        path.append(.correctionMode)
+                HeroCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Image(systemName: "doc.viewfinder")
+                            .font(.system(size: 32, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                        Text("Point at the receipt")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text("Good lighting helps OCR accuracy.")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.85))
                     }
-                    FairoPrimaryButton(title: "Simulate Camera Scan", secondary: true) {
-                        model.processSampleReceipt()
-                        path.append(.correctionMode)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                FairoPrimaryButton(title: "Scan with Camera") {
+                    if DocumentScannerSupport.isAvailable {
+                        showScanner = true
+                    } else {
+                        model.scanError = "Document scanning requires a physical iPhone. Use Sample Receipt in the simulator."
                     }
                 }
+                .disabled(!DocumentScannerSupport.isAvailable)
+                .opacity(DocumentScannerSupport.isAvailable ? 1 : 0.5)
+
+                if !DocumentScannerSupport.isAvailable {
+                    Text("Camera scan is unavailable in the simulator — use Sample Receipt below.")
+                        .font(.footnote)
+                        .foregroundStyle(theme.textSecondary)
+                }
+
+                FairoPrimaryButton(title: "Use Sample Receipt", secondary: true) {
+                    model.processSampleReceipt()
+                    path.append(.correctionMode)
+                }
+
+                if let error = model.scanError {
+                    FairoCard {
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(theme.pop)
+                            Text(error)
+                                .font(.subheadline)
+                                .foregroundStyle(theme.textSecondary)
+                        }
+                    }
+                }
+
+                Spacer()
             }
-            Spacer()
+            .padding(20)
+            .background(theme.background)
+
+            if model.isProcessingReceipt {
+                Color.black.opacity(0.35).ignoresSafeArea()
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(1.2)
+                    Text("Reading receipt…")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                }
+                .padding(28)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            }
         }
-        .padding(20)
-        .background(theme.background)
         .navigationTitle("New Split")
         .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(isPresented: $showScanner) {
+            if DocumentScannerSupport.isAvailable {
+                DocumentScannerView(
+                    onComplete: { images in
+                        showScanner = false
+                        Task {
+                            await model.processScannedImages(images)
+                            if model.scanError == nil {
+                                path.append(.correctionMode)
+                            }
+                        }
+                    },
+                    onCancel: { showScanner = false }
+                )
+                .ignoresSafeArea()
+            }
+        }
     }
 }
 
@@ -48,6 +122,22 @@ struct CorrectionModeView: View {
                 .foregroundStyle(theme.textPrimary)
             Text("This choice applies to this receipt only.")
                 .foregroundStyle(theme.textSecondary)
+
+            if let split = model.activeSplit {
+                FairoCard {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(split.title)
+                                .font(.headline)
+                            Text("\(ReconciliationService.activeItems(split).count) items · \(MoneyService.format(split.total, currencyCode: split.currencyCode))")
+                                .font(.subheadline)
+                                .foregroundStyle(theme.textSecondary)
+                        }
+                        Spacer()
+                        PopBadge(label: "Scanned")
+                    }
+                }
+            }
 
             FairoCard {
                 VStack(alignment: .leading, spacing: 12) {
@@ -94,25 +184,32 @@ struct ReviewFullListView: View {
     @Environment(\.colorScheme) private var scheme
     private var theme: FairoColors { scheme == .dark ? .dark : .light }
 
+    private var items: [LineItem] {
+        model.activeSplit?.items ?? []
+    }
+
     var body: some View {
         ScrollView {
-            VStack(spacing: 12) {
-                ForEach(model.activeSplit?.items ?? []) { item in
-                    FairoCard {
-                        VStack(alignment: .leading, spacing: 8) {
-                            TextField("Name", text: nameBinding(for: item.id))
-                            TextField("Total", text: amountBinding(for: item.id))
-                                .keyboardType(.decimalPad)
-                            Button(item.isDisregarded ? "Restore" : "Disregard") {
-                                model.updateSplit { split in
-                                    guard let i = split.items.firstIndex(where: { $0.id == item.id }) else { return }
-                                    split.items[i].isDisregarded.toggle()
-                                }
-                            }
-                            .foregroundStyle(theme.pop)
-                        }
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Check each line from your receipt")
+                        .font(.headline)
+                        .foregroundStyle(theme.textPrimary)
+                    Text("Each card is one item. Edit the name, quantity, or line total if the scan got it wrong.")
+                        .font(.subheadline)
+                        .foregroundStyle(theme.textSecondary)
+                    if !items.isEmpty {
+                        Text("\(items.count) items scanned")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(theme.textSecondary)
+                            .padding(.top, 4)
                     }
                 }
+
+                ForEach(items) { item in
+                    reviewItemCard(item)
+                }
+
                 FairoPrimaryButton(title: "Continue") {
                     continueAfterReview(path: $path, model: model)
                 }
@@ -122,6 +219,87 @@ struct ReviewFullListView: View {
         .background(theme.background)
         .navigationTitle("Review items")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private func reviewItemCard(_ item: LineItem) -> some View {
+        let split = model.activeSplit
+        FairoCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("Line item")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.textSecondary)
+                        .tracking(0.5)
+                    Spacer()
+                    if let conf = item.ocrConfidence, conf < 0.75 {
+                        PopBadge(label: "Check this")
+                    }
+                    if item.isDisregarded {
+                        PopBadge(label: "Disregarded")
+                    }
+                }
+
+                labeledField(title: "Item name") {
+                    TextField("e.g. Beef Burger", text: nameBinding(for: item.id))
+                        .textFieldStyle(.plain)
+                        .foregroundStyle(theme.textPrimary)
+                }
+
+                HStack(alignment: .top, spacing: 12) {
+                    labeledField(title: "Qty") {
+                        TextField("1", text: quantityBinding(for: item.id))
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.center)
+                            .textFieldStyle(.plain)
+                            .foregroundStyle(theme.textPrimary)
+                    }
+                    .frame(width: 72)
+
+                    labeledField(title: "Line total") {
+                        TextField("0.00", text: amountBinding(for: item.id))
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(.plain)
+                            .foregroundStyle(theme.textPrimary)
+                    }
+                }
+
+                if item.quantity > 1, let split {
+                    Text("Unit price: \(MoneyService.format(item.unitPrice, currencyCode: split.currencyCode)) each")
+                        .font(.caption)
+                        .foregroundStyle(theme.textSecondary)
+                }
+
+                Button(item.isDisregarded ? "Restore item" : "Disregard item") {
+                    model.updateSplit { split in
+                        guard let i = split.items.firstIndex(where: { $0.id == item.id }) else { return }
+                        split.items[i].isDisregarded.toggle()
+                    }
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(theme.pop)
+            }
+            .opacity(item.isDisregarded ? 0.5 : 1)
+        }
+    }
+
+    @ViewBuilder
+    private func labeledField<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(theme.textSecondary)
+                .tracking(0.6)
+            content()
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(theme.background)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(theme.border, lineWidth: 1)
+                }
+        }
     }
 
     private func nameBinding(for id: UUID) -> Binding<String> {
@@ -136,11 +314,31 @@ struct ReviewFullListView: View {
         )
     }
 
+    private func quantityBinding(for id: UUID) -> Binding<String> {
+        Binding(
+            get: {
+                guard let item = model.activeSplit?.items.first(where: { $0.id == id }) else { return "1" }
+                return "\(item.quantity)"
+            },
+            set: { newValue in
+                model.updateSplit { split in
+                    guard let i = split.items.firstIndex(where: { $0.id == id }) else { return }
+                    let qty = max(Int(newValue.filter(\.isNumber)) ?? 1, 1)
+                    split.items[i].quantity = qty
+                    split.items[i].unitPrice = split.items[i].lineTotal / Decimal(qty)
+                }
+            }
+        )
+    }
+
     private func amountBinding(for id: UUID) -> Binding<String> {
         Binding(
             get: {
                 guard let item = model.activeSplit?.items.first(where: { $0.id == id }) else { return "" }
-                return "\(item.lineTotal)"
+                var value = item.lineTotal
+                var rounded = Decimal()
+                NSDecimalRound(&rounded, &value, 2, .plain)
+                return "\(rounded)"
             },
             set: { newValue in
                 model.updateSplit { split in
@@ -171,10 +369,33 @@ struct ReviewStepThroughView: View {
                     .foregroundStyle(theme.textSecondary)
                 FairoCard {
                     VStack(alignment: .leading, spacing: 12) {
+                        Text("ITEM NAME")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(theme.textSecondary)
+                            .tracking(0.6)
                         Text(item.name).font(.title2.bold())
-                        Text(MoneyService.format(item.lineTotal, currencyCode: split.currencyCode))
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(theme.textPrimary)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("QTY")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(theme.textSecondary)
+                                Text("\(item.quantity)")
+                                    .font(.title3.bold())
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("LINE TOTAL")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(theme.textSecondary)
+                                Text(MoneyService.format(item.lineTotal, currencyCode: split.currencyCode))
+                                    .font(.title3.bold())
+                            }
+                        }
+                        if item.quantity > 1 {
+                            Text("Unit price: \(MoneyService.format(item.unitPrice, currencyCode: split.currencyCode)) each")
+                                .font(.caption)
+                                .foregroundStyle(theme.textSecondary)
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

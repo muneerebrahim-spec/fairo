@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 enum FlowRoute: Hashable {
@@ -16,6 +17,7 @@ enum FlowRoute: Hashable {
 }
 
 struct RootView: View {
+    @Environment(\.modelContext) private var modelContext
     @State private var model = SplitFlowViewModel()
     @State private var path: [FlowRoute] = []
 
@@ -56,6 +58,9 @@ struct RootView: View {
         }
         .environment(model)
         .background(theme.background.ignoresSafeArea())
+        .onAppear {
+            model.configure(context: modelContext)
+        }
     }
 }
 
@@ -63,20 +68,68 @@ struct HomeView: View {
     @Binding var path: [FlowRoute]
     @Environment(SplitFlowViewModel.self) private var model
     @Environment(\.colorScheme) private var scheme
+    @State private var showSettings = false
+    @State private var preferredCurrency = AppSettings.preferredCurrencyCode
     private var theme: FairoColors { scheme == .dark ? .dark : .light }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Fairo")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundStyle(theme.textPrimary)
-                    Text("Split bills fairly")
-                        .font(.system(size: 15))
-                        .foregroundStyle(theme.textSecondary)
+            VStack(alignment: .leading, spacing: 24) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Fairo")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundStyle(theme.textPrimary)
+                        Text("Split bills fairly")
+                            .font(.system(size: 15))
+                            .foregroundStyle(theme.textSecondary)
+                    }
+                    Spacer()
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(theme.textSecondary)
+                            .padding(8)
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.top, 8)
+
+                Button {
+                    showSettings = true
+                } label: {
+                    FairoCard {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Default currency")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(theme.textPrimary)
+                                Text(AppSettings.currencyLabel(for: preferredCurrency))
+                                    .font(.caption)
+                                    .foregroundStyle(theme.textSecondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(theme.textSecondary)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+
+                HeroCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Scan. Assign. Done.")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(.white)
+                        Text("Snap a receipt, assign items to friends, and share who owes what.")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.white.opacity(0.88))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
 
                 FairoPrimaryButton(title: "New Split") {
                     model.startNewSplit()
@@ -90,8 +143,17 @@ struct HomeView: View {
 
                 if model.history.isEmpty {
                     FairoCard {
-                        Text("No saved splits yet. Scan a receipt to get started.")
-                            .foregroundStyle(theme.textSecondary)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.title2)
+                                .foregroundStyle(theme.textSecondary)
+                            Text("No saved splits yet")
+                                .font(.headline)
+                                .foregroundStyle(theme.textPrimary)
+                            Text("Scan a receipt to get started.")
+                                .foregroundStyle(theme.textSecondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 } else {
                     ForEach(model.history) { split in
@@ -100,15 +162,23 @@ struct HomeView: View {
                             path.append(.summary(readonly: true, splitId: split.id))
                         } label: {
                             FairoCard {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(split.title)
-                                        .font(.system(size: 17, weight: .semibold))
-                                        .foregroundStyle(theme.textPrimary)
-                                    Text("\(split.date.formatted(date: .abbreviated, time: .omitted)) · \(MoneyService.format(split.total, currencyCode: split.currencyCode))")
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(theme.textSecondary)
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(split.title)
+                                            .font(.system(size: 17, weight: .semibold))
+                                            .foregroundStyle(theme.textPrimary)
+                                        Text(split.date.formatted(date: .abbreviated, time: .omitted))
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(theme.textSecondary)
+                                        Text("\(split.participants.count) people · \(ReconciliationService.activeItems(split).count) items")
+                                            .font(.caption)
+                                            .foregroundStyle(theme.textSecondary)
+                                    }
+                                    Spacer()
+                                    Text(MoneyService.format(split.total, currencyCode: split.currencyCode))
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundStyle(theme.accentDeep)
                                 }
-                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                         }
                         .buttonStyle(.plain)
@@ -119,5 +189,78 @@ struct HomeView: View {
         }
         .background(theme.background)
         .navigationBarHidden(true)
+        .sheet(isPresented: $showSettings) {
+            SettingsView {
+                preferredCurrency = AppSettings.preferredCurrencyCode
+            }
+        }
+    }
+}
+
+struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var scheme
+    @State private var selectedCurrency: String = AppSettings.preferredCurrencyCode
+
+    var onSave: (() -> Void)?
+
+    private var theme: FairoColors { scheme == .dark ? .dark : .light }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("New splits use this currency unless the receipt clearly shows another (e.g. $ or R on the bill).")
+                        .font(.subheadline)
+                        .foregroundStyle(theme.textSecondary)
+
+                    FairoCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("DEFAULT CURRENCY")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(theme.textSecondary)
+                                .tracking(0.6)
+
+                            Picker("Currency", selection: $selectedCurrency) {
+                                ForEach(AppSettings.supportedCurrencyCodes, id: \.self) { code in
+                                    Text(AppSettings.currencyLabel(for: code)).tag(code)
+                                }
+                            }
+                            .pickerStyle(.wheel)
+                            .frame(height: 148)
+
+                            Text("Preview: \(MoneyService.format(123.45, currencyCode: selectedCurrency))")
+                                .font(.subheadline)
+                                .foregroundStyle(theme.textPrimary)
+                        }
+                    }
+
+                    FairoPrimaryButton(title: "Use device default (\(AppSettings.localeDefaultCurrencyCode))", secondary: true) {
+                        selectedCurrency = AppSettings.localeDefaultCurrencyCode
+                    }
+
+                    Text("Device locale: \(AppSettings.currencyLabel(for: AppSettings.localeDefaultCurrencyCode))")
+                        .font(.caption)
+                        .foregroundStyle(theme.textSecondary)
+                }
+                .padding(20)
+            }
+            .background(theme.background)
+            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        AppSettings.preferredCurrencyCode = selectedCurrency
+                        onSave?()
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
+        }
     }
 }

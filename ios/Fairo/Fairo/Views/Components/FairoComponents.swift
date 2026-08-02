@@ -36,24 +36,32 @@ struct AvatarView: View {
 struct HeroCard<Content: View>: View {
     @ViewBuilder var content: Content
     @Environment(\.colorScheme) private var scheme
+    private var theme: FairoColors { scheme == .dark ? .dark : .light }
 
     var body: some View {
-        ZStack {
-            if scheme == .dark {
-                RoundedRectangle(cornerRadius: FairoTheme.heroRadius, style: .continuous)
-                    .fill((scheme == .dark ? FairoColors.dark : FairoColors.light).accentBright.opacity(0.28))
-                    .blur(radius: 48)
-                    .offset(y: -10)
-            }
-            RoundedRectangle(cornerRadius: FairoTheme.heroRadius, style: .continuous)
-                .fill(.clear)
-                .background(FairoGradient())
-                .clipShape(RoundedRectangle(cornerRadius: FairoTheme.heroRadius, style: .continuous))
-                .shadow(color: FairoColors.light.accentDeep.opacity(0.25), radius: 16, y: 8)
-                .overlay {
-                    content.padding(24)
+        content
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                ZStack {
+                    if scheme == .dark {
+                        RoundedRectangle(cornerRadius: FairoTheme.heroRadius, style: .continuous)
+                            .fill(theme.accentBright.opacity(0.28))
+                            .blur(radius: 48)
+                            .padding(-24)
+                    }
+                    RoundedRectangle(cornerRadius: FairoTheme.heroRadius, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [theme.accentDeep, theme.accentBright],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                 }
-        }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: FairoTheme.heroRadius, style: .continuous))
+            .shadow(color: theme.accentDeep.opacity(0.25), radius: 16, y: 8)
     }
 }
 
