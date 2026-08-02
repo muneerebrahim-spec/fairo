@@ -25,6 +25,7 @@
 		BF001010 /* PersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000011 /* PersistenceService.swift */; };
 		BF001011 /* VisionOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000012 /* VisionOCRService.swift */; };
 		BF001012 /* DocumentScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000013 /* DocumentScannerView.swift */; };
+		BF001013 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF000014 /* AppSettings.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +47,7 @@
 		BF000011 /* PersistenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceService.swift; sourceTree = "<group>"; };
 		BF000012 /* VisionOCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionOCRService.swift; sourceTree = "<group>"; };
 		BF000013 /* DocumentScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentScannerView.swift; sourceTree = "<group>"; };
+		BF000014 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		BF000020 /* Fairo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fairo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -109,6 +111,7 @@
 				BF000007 /* ShareTextBuilder.swift */,
 				BF000011 /* PersistenceService.swift */,
 				BF000012 /* VisionOCRService.swift */,
+				BF000014 /* AppSettings.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -235,6 +238,7 @@
 				BF001010 /* PersistenceService.swift in Sources */,
 				BF001011 /* VisionOCRService.swift in Sources */,
 				BF001012 /* DocumentScannerView.swift in Sources */,
+				BF001013 /* AppSettings.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
